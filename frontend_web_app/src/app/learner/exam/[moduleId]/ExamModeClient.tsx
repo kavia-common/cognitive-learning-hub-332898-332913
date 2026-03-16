@@ -75,7 +75,7 @@ export default function ExamModeClient({ moduleId }: { moduleId: string }) {
   const [remainingSeconds, setRemainingSeconds] =
     React.useState<number>(20 * 60);
 
-  // Load config + questions
+  // Load config + questions (server-authoritative; demo fallback if backend missing)
   React.useEffect(() => {
     let cancelled = false;
 
@@ -86,7 +86,6 @@ export default function ExamModeClient({ moduleId }: { moduleId: string }) {
         try {
           qs = await BackendApi.getExamQuestions(decodedModuleId);
         } catch {
-          // Demo fallback if backend not implemented.
           qs = demoQuestions;
         }
 
@@ -114,35 +113,60 @@ export default function ExamModeClient({ moduleId }: { moduleId: string }) {
   React.useEffect(() => {
     if (!config || !questions) return;
 
-    try {
-      const existing = ExamAttemptFlow.getAttempt(decodedModuleId);
+    (async () => {
+      try {
+        const existing = ExamAttemptFlow.getAttempt(decodedModuleId);
 
-      if (existing?.status === "submitted" || existing?.status === "expired") {
-        setAttemptStatus(existing);
-        router.replace(
-          `/learner/modules/${encodeURIComponent(decodedModuleId)}`
-        );
-        return;
-      }
+        if (existing?.status === "submitted" || existing?.status === "expired") {
+          setAttemptStatus(existing);
+          router.replace(`/learner/modules/${encodeURIComponent(decodedModuleId)}`);
+          return;
+        }
 
-      const shouldStart = startRequested || existing?.status === "in_progress";
-      if (!shouldStart) {
-        router.replace(
-          `/learner/modules/${encodeURIComponent(decodedModuleId)}`
-        );
-        return;
-      }
+        const shouldStart = startRequested || existing?.status === "in_progress";
+        if (!shouldStart) {
+          router.replace(`/learner/modules/${encodeURIComponent(decodedModuleId)}`);
+          return;
+        }
 
-      const created = ExamAttemptFlow.createAttempt({ config, questions });
-      setAttemptStatus(created);
-      setRemainingSeconds(ExamAttemptFlow.getRemainingSeconds(created));
-    } catch (e: unknown) {
-      if (e instanceof ExamAttemptFlowError) {
-        setError(e.message);
-      } else {
-        setError("Unable to start exam.");
+        // Start attempt in backend (enforces 1 attempt, sets started_at/expires_at)
+        // If backend is not available, fall back to local-only demo attempt creation.
+        let created = existing;
+        if (!created) {
+          try {
+            const started = await BackendApi.startExamAttempt(decodedModuleId);
+            const startedAtMs = new Date(started.startedAt).getTime();
+            // Create local attempt state but keep backend attemptId and server time anchor.
+            created = ExamAttemptFlow.createAttempt({
+              config: { ...config, moduleId: decodedModuleId },
+              questions,
+            });
+            // Overwrite with server attempt id and start time for deterministic expiry alignment.
+            created = {
+              ...created,
+              attemptId: started.attemptId,
+              startedAtMs,
+              durationSeconds: started.durationSeconds,
+            };
+            window.localStorage.setItem(`clh.examAttempt.${decodedModuleId}`, JSON.stringify(created));
+          } catch {
+            created = ExamAttemptFlow.createAttempt({ config, questions });
+          }
+        } else {
+          // Ensure local timer uses configured duration.
+          created = ExamAttemptFlow.refreshExpiry(created);
+        }
+
+        setAttemptStatus(created);
+        setRemainingSeconds(ExamAttemptFlow.getRemainingSeconds(created));
+      } catch (e: unknown) {
+        if (e instanceof ExamAttemptFlowError) {
+          setError(e.message);
+        } else {
+          setError("Unable to start exam.");
+        }
       }
-    }
+    })();
   }, [config, questions, decodedModuleId, startRequested, router]);
 
   // Timer tick
@@ -215,6 +239,7 @@ export default function ExamModeClient({ moduleId }: { moduleId: string }) {
         correctChoiceIdsByQuestionId: submission.correctChoiceIdsByQuestionId,
       });
 
+      // Persist terminal attempt + result locally for module detail UI.
       ExamAttemptFlow.submitAttempt(decodedModuleId, result);
       router.replace(`/learner/modules/${encodeURIComponent(decodedModuleId)}`);
     } catch (e: unknown) {
@@ -232,8 +257,7 @@ export default function ExamModeClient({ moduleId }: { moduleId: string }) {
         router.replace(`/learner/modules/${encodeURIComponent(decodedModuleId)}`);
         return;
       }
-      const msg =
-        e instanceof Error ? e.message : typeof e === "string" ? e : "Failed to submit.";
+      const msg = e instanceof Error ? e.message : typeof e === "string" ? e : "Failed to submit.";
       setSubmitError(msg);
     }
   }
