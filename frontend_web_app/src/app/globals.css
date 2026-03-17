@@ -1,0 +1,191 @@
+@import "tailwindcss";
+
+/*
+  Soft Gray theme tokens
+  - primary: #374151
+  - secondary: #9CA3AF
+  - success: #16A34A
+  - error: #EF4444
+  - background: #F9FAFB
+  - surface: #FFFFFF
+  - text: #111827
+*/
+:root {
+  color-scheme: light;
+
+  /* Core tokens */
+  --bg: #f9fafb;
+  --surface: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+
+  --primary: #374151;
+  --secondary: #9ca3af;
+
+  --success: #16a34a;
+  --error: #ef4444;
+
+  /* Borders / rings */
+  --border: rgba(17, 24, 39, 0.10);
+  --ring: rgba(55, 65, 81, 0.25);
+
+  /* Radii */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+
+  /* Shadows (soft) */
+  --shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.06);
+  --shadow-md: 0 10px 18px rgba(17, 24, 39, 0.08);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+
+  /* Clean, modern UI font stack */
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Improve readability */
+  line-height: 1.5;
+}
+
+/* App-wide type rhythm */
+h1 {
+  font-size: 1.875rem; /* 30px */
+  line-height: 2.25rem;
+  letter-spacing: -0.02em;
+  font-weight: 650;
+}
+
+h2 {
+  font-size: 1.5rem; /* 24px */
+  line-height: 2rem;
+  letter-spacing: -0.01em;
+  font-weight: 650;
+}
+
+h3 {
+  font-size: 1.25rem; /* 20px */
+  line-height: 1.75rem;
+  font-weight: 650;
+}
+
+p {
+  margin: 0;
+  color: rgba(17, 24, 39, 0.86);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Utility classes (component-friendly, avoids requiring tailwind.config) */
+.ui-surface {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.ui-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.ui-muted {
+  color: rgba(17, 24, 39, 0.62);
+}
+
+.ui-focus-ring:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 4px var(--ring);
+}
+
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  border-radius: 9999px;
+  padding: 0.625rem 1rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+
+  box-shadow: var(--shadow-sm);
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+.ui-button:hover {
+  background: rgba(55, 65, 81, 0.04);
+  box-shadow: 0 6px 14px rgba(17, 24, 39, 0.10);
+}
+
+.ui-button:active {
+  transform: translateY(1px);
+}
+
+.ui-button-primary {
+  background: rgba(55, 65, 81, 0.92);
+  color: #fff;
+  border-color: rgba(55, 65, 81, 0.35);
+}
+
+.ui-button-primary:hover {
+  background: rgba(55, 65, 81, 1);
+}
+
+.ui-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: rgba(55, 65, 81, 0.04);
+}
+
+/* Comfortable spacing defaults for "page sections" */
+.ui-page {
+  width: 100%;
+  min-height: 100%;
+  padding: clamp(16px, 2vw, 24px);
+}
+
+.ui-container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.ui-grid {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .ui-grid {
+    gap: 20px;
+  }
+}
